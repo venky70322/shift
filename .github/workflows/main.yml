@@ -1,0 +1,40 @@
+name: RTL CI AUTO MERGE
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  simulate-and-merge:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Simulation
+        run: unset VERILATOR_ROOT && make all
+
+      - name: Configure Git
+        run: |
+          git config --global user.name github-actions
+          git config --global user.email actions@github.com
+
+      - name: Create Temp Branch At Latest Commit
+        run: git branch auto-temp
+
+      - name: Move Main Back One Commit
+        run: git reset --hard HEAD~1
+
+      - name: Merge Temp Branch
+        run: |
+          git merge --no-ff auto-temp \
+          -m "Auto merge after CI success"
+
+      - name: Push Main
+        run: git push --force origin main
